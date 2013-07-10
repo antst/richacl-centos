@@ -457,11 +457,11 @@ diff -purN linux-2.6.32-358.11.1.el6.x86_64.orig/fs/ext4/richacl.c linux-2.6.32-
 +}
 +
 +static size_t
-+ext4_xattr_list_richacl(struct dentry *dentry, char *list, size_t list_len,
-+			const char *name, size_t name_len, int type)
++ext4_xattr_list_richacl(struct inode *inode, char *list, size_t list_len,
++			const char *name, size_t name_len)
 +{
 +	const size_t size = sizeof(RICHACL_XATTR);
-+	if (!IS_RICHACL(dentry->d_inode))
++	if (!IS_RICHACL(inode))
 +		return 0;
 +	if (list && size <= list_len)
 +		memcpy(list, RICHACL_XATTR, size);
@@ -469,15 +469,15 @@ diff -purN linux-2.6.32-358.11.1.el6.x86_64.orig/fs/ext4/richacl.c linux-2.6.32-
 +}
 +
 +static int
-+ext4_xattr_get_richacl(struct dentry *dentry, const char *name, void *buffer,
-+		size_t buffer_size, int type)
++ext4_xattr_get_richacl(struct inode *inode, const char *name, void *buffer,
++		size_t buffer_size)
 +{
 +	struct richacl *acl;
 +	size_t size;
 +
 +	if (strcmp(name, "") != 0)
 +		return -EINVAL;
-+	acl = ext4_get_richacl(dentry->d_inode);
++	acl = ext4_get_richacl(inode);
 +	if (IS_ERR(acl))
 +		return PTR_ERR(acl);
 +	if (acl == NULL)
@@ -494,15 +494,15 @@ diff -purN linux-2.6.32-358.11.1.el6.x86_64.orig/fs/ext4/richacl.c linux-2.6.32-
 +}
 +
 +static int
-+ext4_xattr_set_richacl(struct dentry *dentry, const char *name,
-+		const void *value, size_t size, int flags, int type)
++ext4_xattr_set_richacl(struct inode *inode, const char *name,
++		const void *value, size_t size, int flags)
 +{
 +	handle_t *handle;
 +	struct richacl *acl = NULL;
 +	int retval, retries = 0;
-+	struct inode *inode = dentry->d_inode;
 +
-+	if (!IS_RICHACL(dentry->d_inode))
++
++	if (!IS_RICHACL(inode))
 +		return -EOPNOTSUPP;
 +	if (S_ISLNK(inode->i_mode))
 +		return -EOPNOTSUPP;
@@ -534,7 +534,7 @@ diff -purN linux-2.6.32-358.11.1.el6.x86_64.orig/fs/ext4/richacl.c linux-2.6.32-
 +	return retval;
 +}
 +
-+const struct xattr_handler ext4_richacl_xattr_handler = {
++struct xattr_handler ext4_richacl_xattr_handler = {
 +	.prefix	= RICHACL_XATTR,
 +	.list	= ext4_xattr_list_richacl,
 +	.get	= ext4_xattr_get_richacl,
@@ -768,13 +768,10 @@ diff -purN linux-2.6.32-358.11.1.el6.x86_64.orig/fs/ext4/xattr.h linux-2.6.32-35
  
  struct ext4_xattr_header {
  	__le32	h_magic;	/* magic number for identification */
-@@ -70,6 +71,10 @@ extern struct xattr_handler ext4_xattr_t
+@@ -70,6 +71,7 @@ extern const struct xattr_handler ext4_x
  extern struct xattr_handler ext4_xattr_acl_access_handler;
  extern struct xattr_handler ext4_xattr_acl_default_handler;
  extern struct xattr_handler ext4_xattr_security_handler;
-+extern struct xattr_handler ext4_xattr_acl_access_handler;
-+extern struct xattr_handler ext4_xattr_acl_default_handler;
-+extern struct xattr_handler ext4_xattr_security_handler;
 +extern struct xattr_handler ext4_richacl_xattr_handler;
  
  extern ssize_t ext4_listxattr(struct dentry *, char *, size_t);
